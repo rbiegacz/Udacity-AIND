@@ -18,37 +18,9 @@ class SearchTimeout(Exception):
     pass
 
 
-def center_score(game, player):
-    """Outputs a score equal to square of the distance from the center of the
-    board to the position of the player.
-
-    This heuristic is only used by the autograder for testing.
-
-    Parameters
-    ----------
-    game : `isolation.Board`
-        An instance of `isolation.Board` encoding the current state of the
-        game (e.g., player locations and blocked cells).
-
-    player : hashable
-        One of the objects registered by the game object as a valid player.
-        (i.e., `player` should be either game.__player_1__ or
-        game.__player_2__).
-
-    Returns
-    ----------
-    float
-        The heuristic value of the current game state
-    """
-    if game.is_loser(player):
-        return float("-inf")
-
-    if game.is_winner(player):
-        return float("inf")
-
-    w_pos, h_pos = game.width / 2., game.height / 2.
-    y_pos, x_pos = game.get_player_location(player)
-    return float((h_pos - y_pos)**2 + (w_pos - x_pos)**2)
+def active_player(game, player):
+    """this function returns information whether we currently deal with active player"""
+    return game.active_player == player
 
 
 def custom_score(game, player):
@@ -75,7 +47,6 @@ def custom_score(game, player):
     float
         The heuristic value of the current game state to the specified player.
     """
-    # TTODO: finish this function!
     # let's use the first function as
     if game.is_loser(player):
         return float("-inf")
@@ -85,8 +56,21 @@ def custom_score(game, player):
 
     score1 = len(game.get_legal_moves(player))
     score2 = len(game.get_legal_moves(game.get_opponent(player)))
-    printd("The score is: {}".format(score1 - score2))
-    return float(score1 - score2)
+    # let's normalize the score
+    # the max value of score1 might be 8
+    # the max value of score2 might be 8
+    # so the score can have vaulues from -8 up to 8
+    score = float(score1 - score2)/8.0
+    mid_w , mid_h = game.height // 2 + 1 , game.width // 2 + 1
+    center_location = (mid_w , mid_h)
+    # getting player #1 location
+    player_location  = game.get_player_location(player)
+    # checking if player is the center location
+    if center_location == player_location:
+        # OK - we are strongly recommending this move
+        score = score+1
+    printd("The score for move {} is: {}".format(game.get_player_location(player), score))
+    return float(score)
 
 
 def custom_score_2(game, player):
@@ -111,13 +95,88 @@ def custom_score_2(game, player):
     float
         The heuristic value of the current game state to the specified player.
     """
-    # TTODO: finish this function!
-    player_1_moves = game.get_legal_moves(player)
-    player_2_moves = game.get_legal_moves(game.get_opponent(player))
-    score1 = len(player_1_moves)
-    score2 = len(player_2_moves)
-    score3 = center_score(game, player)
-    return float(score1 - score2 + score3)
+    # Have we won the game?
+    if game.is_winner(player):
+        return float("inf")
+
+    # Do we even have moves to play?
+    if game.is_loser(player):
+        return float("-inf")
+
+    #player_1_moves = game.get_legal_moves(player)
+    #player_2_moves = game.get_legal_moves(game.get_opponent(player))
+    #score1 = len(player_1_moves)
+    #score2 = len(player_2_moves)
+    #score = float(score1 - score2)/8.0
+    center_y_pos, center_x_pos = int(game.height/2), int(game.width/2)
+    player_y_pos, player_x_pos = game.get_player_location(player)
+    # mid_w , mid_h = game.height // 2 + 1 , game.width // 2 + 1
+    # center_location = (mid_w , mid_h)
+
+    opponent_y_pos, opponent_x_pos = game.get_player_location(game.get_opponent(player))
+    player_distance = abs(player_y_pos - center_y_pos) + abs(player_x_pos - center_x_pos)
+    opponent_distance = abs(opponent_y_pos - center_y_pos) + abs(opponent_x_pos - center_x_pos)
+    score = float(abs(opponent_distance - player_distance)/9)
+    if player_distance < opponent_distance:
+        pass
+    elif player_distance > opponent_distance:
+        score = -score
+
+    mid_w , mid_h = game.height // 2 + 1 , game.width // 2 + 1
+    center_location = (mid_w , mid_h)
+    # getting player #1 location
+    player_location  = game.get_player_location(player)
+    # checking if player is the center location
+    if center_location == player_location:
+        # OK - we are strongly recommending this move
+        score = score+1
+    printd("The score is: {}".format(score))
+    return float(score)
+
+
+def _custom_score_2(game, player):
+    """Calculate the heuristic value of a game state from the point of view
+    of the given player.
+
+    Note: this function should be called from within a Player instance as
+    `self.score()` -- you should not need to call this function directly.
+
+    Parameters
+    ----------
+    game : `isolation.Board`
+        An instance of `isolation.Board` encoding the current state of the
+        game (e.g., player locations and blocked cells).
+
+    player : object
+        A player instance in the current game (i.e., an object corresponding to
+        one of the player objects `game.__player_1__` or `game.__player_2__`.)
+
+    Returns
+    -------
+    float
+        The heuristic value of the current game state to the specified player.
+    """
+    # Have we won the game?
+    if game.is_winner(player):
+        return float("inf")
+
+    # Do we even have moves to play?
+    if game.is_loser(player):
+        return float("-inf")
+
+    mid_w , mid_h = game.height // 2 + 1 , game.width // 2 + 1
+    center_location = (mid_w , mid_h)
+    # getting players location
+    player_location  = game.get_player_location(player)
+    # checking if player is the center location
+    if center_location == player_location:
+        # returning heuristic1 with incentive
+        score = custom_score(game, player)+100
+    else:
+        # returning heuristic1
+        score = custom_score(game, player)
+    printd("The score is: {}".format(score))
+    return float(score)
 
 
 def custom_score_3(game, player):
@@ -142,10 +201,31 @@ def custom_score_3(game, player):
     float
         The heuristic value of the current game state to the specified player.
     """
-    # TTODO: finish this function!
+    # Have we won the game?
+    if game.is_winner(player):
+        return float("inf")
+
+    # Do we even have moves to play?
+    if game.is_loser(player):
+        return float("-inf")
+
     score1 = len(game.get_legal_moves(player))
     score2 = len(game.get_legal_moves(game.get_opponent(player)))
-    return float(score1 - 2*score2)
+    # let's normalize the score
+    # the max value of score1 might be 8
+    # the max value of 2*score2 might be 16
+    # so the score can have values from -16 up to 8
+    score = float(score1 - 2*score2)/16.0
+    mid_w , mid_h = game.height // 2 + 1 , game.width // 2 + 1
+    center_location = (mid_w , mid_h)
+    # getting player #1 location
+    player_location  = game.get_player_location(player)
+    # checking if player is the center location
+    if center_location == player_location:
+        # OK - we are strongly recommending this move
+        score = score+1
+    printd("The score for move {} is: {}".format(game.get_player_location(player), score))
+    return score
 
 
 class IsolationPlayer(object):
@@ -170,7 +250,7 @@ class IsolationPlayer(object):
         positive value large enough to allow the function to return before the
         timer expires.
     """
-    def __init__(self, search_depth=3, score_fn=custom_score, timeout=10.):
+    def __init__(self, search_depth=3, score_fn=custom_score, timeout=40.):
         self.search_depth = search_depth
         self.score = score_fn
         self.time_left = None
@@ -182,9 +262,6 @@ class MinimaxPlayer(IsolationPlayer):
     search. You must finish and test this player to make sure it properly uses
     minimax to return a good move before the search time limit expires.
     """
-
-    def __init__(self, search_depth=3, score_fn=custom_score, timeout=10.):
-        super(MinimaxPlayer, self).__init__(search_depth, score_fn, timeout)
 
     def get_move(self, game, time_left):
         """Search for the best move from the available legal moves and return a
@@ -231,10 +308,6 @@ class MinimaxPlayer(IsolationPlayer):
             pass  # Handle any actions required after timeout as needed
         # Return the best move from the last completed search iteration
         return best_move
-
-    def active_player(self, game):
-        """this function returns information whether we currently deal with active player"""
-        return game.active_player == self
 
     def minimax(self, game, depth):
         """Implement depth-limited minimax search algorithm as described in
@@ -283,7 +356,7 @@ class MinimaxPlayer(IsolationPlayer):
         try:
             # The try/except block will automatically catch the exception
             # raised when the timer is about to expire.
-            _, best_move = self._minimax(game, depth, maximizing_player=self.active_player(game))
+            _, best_move = self._minimax(game, depth, maximizing_player=active_player(game, self))
             printd("Best move: {}".format(best_move))
         except SearchTimeout:
             pass  # Handle any actions required after timeout as needed
@@ -320,7 +393,7 @@ class MinimaxPlayer(IsolationPlayer):
         best_move_so_far = (-1, -1)
         lowest_score_so_far = float("inf")
         highest_score_so_far = float("-inf")
-        # OK - we cannot go deepr
+        # OK - we cannot go deeper
         # just report score for current player's position
         if depth == 0:
             score = self.score(game, self)
@@ -416,6 +489,7 @@ class AlphaBetaPlayer(IsolationPlayer):
             # raised when the timer is about to expire.
             loop = 1
             while 1:
+            #while loop <= self.search_depth:
                 #Do search until timeout
                 printd("\n\nIterative Deepening - Round: {}".format(loop))
                 best_move = self.alphabeta(game, loop)
@@ -425,10 +499,6 @@ class AlphaBetaPlayer(IsolationPlayer):
             pass  # Handle any actions required after timeout as needed
         # Return the best move from the last completed search iteration
         return best_move
-
-    def active_player(self, game_state):
-        """ Determination whether a given play is active"""
-        return game_state.active_player == self
 
     def alphabeta(self, game, depth, alpha=float("-inf"), beta=float("inf")):
         """Implement depth-limited minimax search with alpha-beta pruning as
@@ -494,7 +564,7 @@ class AlphaBetaPlayer(IsolationPlayer):
             printd("Depth: 0, Score: {}\n".format(score))
             return best_move, score
 
-        if self.active_player(game):
+        if active_player(game, self):
             # OK - now we run for Maximizer
             best_score = float("-inf")
             maximizing = True
@@ -510,14 +580,17 @@ class AlphaBetaPlayer(IsolationPlayer):
         printd("Legal moves: {}".format(legal_moves))
         for move in legal_moves:
             printd("Selecting move: {}".format(move))
-            next_ply = game.forecast_move(move)
-            score = self._alphabeta(next_ply, depth - 1, alpha, beta)[1]
+            score = self._alphabeta(game.forecast_move(move), depth - 1, alpha, beta)[1]
+            printd("Alphabeta - depth: {}, alpha: {}, beta {}".format(depth, alpha, beta))
+            printd("Selecting move: {} which has a score {}".format(move, score))
             if maximizing:
                 # if this is maximizer then let's decide if score is greater
                 # than whatever we have seen so far
                 if score > best_score:
                     best_score = score
                     best_move = move
+                elif score == best_score:
+                    printd("Score {} achieved also for {} move".format(score, move))
                 if best_score >= beta:
                     best_move, best_score = move, score
                     break
@@ -530,6 +603,8 @@ class AlphaBetaPlayer(IsolationPlayer):
                 if score < best_score:
                     best_score = score
                     best_move = move
+                elif score == best_score:
+                    printd("Score {} achieved also for {} move".format(score, move))
                 if score <= alpha:
                     best_move, best_score = move, score
                     break
