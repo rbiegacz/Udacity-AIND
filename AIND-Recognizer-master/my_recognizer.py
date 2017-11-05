@@ -2,6 +2,14 @@ import warnings
 from asl_data import SinglesData
 
 
+DEBUG = False
+
+
+def print_debug(msg):
+    """Printing debugging information"""
+    if DEBUG:
+        print(msg)
+
 def recognize(models: dict, test_set: SinglesData):
     """ Recognize test word sequences from word models set
 
@@ -29,7 +37,7 @@ def recognize(models: dict, test_set: SinglesData):
         top_prob = float("-inf")
         top_word = None
         word_probabilities = {}
-        print("Going thru: word {} and model {}".format(word, model))
+        print_debug("Going thru: word {} and model {}".format(word, model))
         for idx in range(test_set.num_items):
             test_sequence, sequence_lengths = test_set.get_item_Xlengths(idx)
             try:
