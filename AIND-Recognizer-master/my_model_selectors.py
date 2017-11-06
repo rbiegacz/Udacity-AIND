@@ -104,6 +104,7 @@ class SelectorBIC(ModelSelector):
             resulting_model = self.base_model(self.n_constant)
         return resulting_model
 
+
 class SelectorDIC(ModelSelector):
     ''' select best model based on Discriminative Information Criterion
 
@@ -151,6 +152,7 @@ class SelectorDIC(ModelSelector):
             if dic > resulting_score:
                 resulting_score, resulting_model = dic, models[self.this_word]
         return resulting_model if resulting_model is not None else self.base_model(self.n_constant)
+
 
 class SelectorCV(ModelSelector):
     ''' select best model based on average log Likelihood of cross-validation folds
