@@ -33,24 +33,20 @@ def recognize(models: dict, test_set: SinglesData):
     # we want to iterate thru:
     # - all words
     # - all models
-    for idx in range(test_set.num_items):
-        # we will to 'guessing' for every word in test set
-        seq, lengths = test_set.get_item_Xlengths(idx)
-        best_prob = float("-inf")
-        best_word = None
+    for word, model in models.items():
+        top_prob = float("-inf")
+        top_word = None
         word_probabilities = {}
-        for word, model in models.items():
-            print_debug("Examining model {}".format(model))
-            print_debug("Calculating probability for word {}".format(word))
+        print_debug("Going thru: word {} and model {}".format(word, model))
+        for idx in range(test_set.num_items):
+            test_sequence, sequence_lengths = test_set.get_item_Xlengths(idx)
             try:
-                word_probabilities[word] = model.score(seq, lengths)
+                word_probabilities[word] = model.score(test_sequence, sequence_lengths)
             except:
                 word_probabilities[word] = float("-inf")
-            if word_probabilities[word] > best_prob:
-                best_prob, best_word = word_probabilities[word], word
-                print_debug("Probability for word {} is {}".format(best_prob, best_word))
-        # adding a list of probabilities to the list of probabilities
+            if word_probabilities[word] > top_prob:
+                top_prob, top_word = word_probabilities[word], word
         probabilities.append(word_probabilities)
-        # adding a top word to the guesses list
-        guesses.append(best_word)
+        guesses.append(top_word)
     return probabilities, guesses
+

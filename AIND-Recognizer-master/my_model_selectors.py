@@ -114,14 +114,13 @@ class SelectorDIC(ModelSelector):
     DIC = log(P(X(i)) - 1/(M-1)SUM(log(P(X(all but i))
     '''
 
-    models, values = {}, {}
 
     def select(self):
         warnings.filterwarnings("ignore", category=DeprecationWarning)
         # DIC score formula = log(P(X(i)) - 1/(M-1)SUM(log(P(X(all but i))
 
         # T O D O implement model selection based on DIC scores
-
+        models, values = {}, {}
         resulting_score = float("-inf")
         resulting_model = None
         # implement model selection based on DIC scores
