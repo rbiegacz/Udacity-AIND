@@ -86,21 +86,35 @@ class SelectorBIC(ModelSelector):
         warnings.filterwarnings("ignore", category=DeprecationWarning)
         # T O D O implement model selection based on BIC scores
         # BIC score formula = - 2 * log(L) + p*log(N)
+        # this variable is to store the best model score
         resulting_score = float("inf")
+        # this variable is to store the best model found
         resulting_model = None
+        # in this loop we are going to build various models in the function of states:
+        # smallest model will be built based on min_n_components
+        # largest model will be built based on max_n_components
         for n_components in range(self.min_n_components, self.max_n_components + 1):
             try:
+                # building model
                 model = self.base_model(n_components)
+                # log likelihood
                 logL = model.score(self.X, self.lengths)
+                # number of features
                 n_features = self.X.shape[1]
+                # How to calculate # of parameters
+                # d - number of features, n - number of HMM states
+                # of parameters = # of probabilities in transition matrix +  of Gaussian mean + of Gaussian variance
+                # n*(n-1)+2*d*n
                 n_params = n_components * (n_components - 1) + 2 * n_features * n_components
                 logN = np.log(self.X.shape[0])
+                # calculating the BIC score
                 bic = -2 * logL + n_params * logN
                 if bic < resulting_score:
                     resulting_score, resulting_model = bic, model
             except:
                 continue
         if resulting_model is None:
+            # if there is no model found - let's create any based on 'n_constant' states
             resulting_model = self.base_model(self.n_constant)
         return resulting_model
 
@@ -115,44 +129,55 @@ class SelectorDIC(ModelSelector):
     DIC = log(P(X(i)) - 1/(M-1)SUM(log(P(X(all but i))
     '''
 
-    models, values = {}, {}
+    logL_models, logL_values = None, None
+
+    @classmethod
+    def GHMM_models(cls, self):
+        models, values = {}, {}
+        for n_components in range(self.min_n_components, self.max_n_components + 1):
+            n_components_models, n_components_ml = {}, {}
+            for word in self.words.keys():
+                X_i, lengths_i = self.hwords[word]
+                try:
+                    # Train model for current word with current n_components
+                    # for a given word we store the model and log likelihood
+                    n_components_models[word] = GaussianHMM(n_components=n_components, n_iter=1000).fit(X_i, lengths_i)
+                    n_components_ml[word] = n_components_models[word].score(X_i, lengths_i)
+                except:
+                    continue
+            models[n_components] = n_components_models
+            values[n_components] = n_components_ml
+        return models, values
 
     def select(self):
         warnings.filterwarnings("ignore", category=DeprecationWarning)
-        # DIC score formula = log(P(X(i)) - 1/(M-1)SUM(log(P(X(all but i))
 
-        # T O D O implement model selection based on DIC scores
+        best_score, best_n_components = None, None
 
-        resulting_score = float("-inf")
-        resulting_model = None
-        # implement model selection based on DIC scores
-        if len(SelectorDIC.models) == 0:
-            for n_components in range(self.min_n_components, self.max_n_components + 1):
-                n_components_models, n_components_ml = {}, {}
-                model = GaussianHMM(n_components=n_components, covariance_type="diag", n_iter=1000,
-                                    random_state=self.random_state, verbose=False)
-                for word in self.words.keys():
-                    X, lengths = self.hwords[word]
-                    try:
-                        model = model.fit(X, lengths)
-                        logL = model.score(X, lengths)
-                        n_components_models[word] = model
-                        n_components_ml[word] = logL
-                    except:
-                        continue
-                SelectorDIC.models[n_components] = n_components_models
-                SelectorDIC.values[n_components] = n_components_ml
+        # Checking if models and log likelihoods were already generated or not
+        if SelectorDIC.logL_models is None or SelectorDIC.logL_values is None:
+            SelectorDIC.logL_models, SelectorDIC.logL_values = SelectorDIC.GHMM_models(self)
 
         for n_components in range(self.min_n_components, self.max_n_components + 1):
-            models, ml = SelectorDIC.models[n_components], SelectorDIC.values[n_components]
+            # Calculate logL for all words with n_components
+            models, ml = SelectorDIC.logL_models[n_components], SelectorDIC.logL_values[n_components]
+
+            # if we don't have a model for a given word - let's skip it
             if self.this_word not in ml:
                 continue
-            avg = np.mean([ml[word] for word in ml.keys() if word != self.this_word])
-            dic = ml[self.this_word] - avg
-            if dic > resulting_score:
-                resulting_score, resulting_model = dic, models[self.this_word]
-        return resulting_model if resulting_model is not None else self.base_model(self.n_constant)
 
+            # DIC = log(P(X(i)) - 1/(M-1)SUM(log(P(X(all but i))
+            avg = np.mean([ml[word] for word in ml.keys() if word != self.this_word])
+            DIC = ml[self.this_word] - avg
+
+            # Replace best_score if DIC improves upon it
+            if best_score is None or DIC > best_score:
+                best_score, best_n_components = DIC, n_components
+
+        if best_score is None:
+            best_n_components = 3
+
+        return self.base_model(best_n_components)
 
 class SelectorCV(ModelSelector):
     ''' select best model based on average log Likelihood of cross-validation folds
@@ -186,9 +211,9 @@ class SelectorCV(ModelSelector):
             for cv_train_idx, cv_test_idx in split_method.split(self.sequences):
                 x_train, lengths_train = combine_sequences(cv_train_idx, self.sequences)
                 x_test, lengths_test = combine_sequences(cv_test_idx, self.sequences)
-                model = GaussianHMM(n_components=n_components, covariance_type="diag", n_iter=1000, random_state=self.random_state, verbose=False)
                 try:
-                    model = model.fit(x_train, lengths_train)
+                    model = GaussianHMM(n_components=n_components, covariance_type="diag", n_iter=1000,
+                                        random_state=self.random_state, verbose=False).fit(x_train, lengths_train)
                     log_likelihood = model.score(x_test, lengths_test)
                     scores.append(log_likelihood)
                 except Exception as exception_msg:
