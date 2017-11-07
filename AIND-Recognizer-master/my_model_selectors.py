@@ -202,7 +202,7 @@ class SelectorCV(ModelSelector):
             # score variable it will be a list containing the log likelihood for a model
             # we will calculate the average of the results stored to calculate a score for a given model
             scores, log_likelihood = [], None
-            # GaussianHMM - model is going to store an object of Gausian HMM initialized appropriately
+            # GaussianHMM - model is going to store an object of Gaussian HMM initialized appropriately
             model = None
 
             # Description of KFold
