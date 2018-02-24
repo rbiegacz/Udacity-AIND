@@ -2,8 +2,8 @@
 dogImages/
 lfw/
 __pycache__/
-saved_models/weights.best.from_scratch.hdf5
-saved_models/weights.best.vgg16.hdf5
+debug.log
+saved_models/*.hdf5
 .ipynb_checkpoints/
 bottleneck_features/*.npz
 
