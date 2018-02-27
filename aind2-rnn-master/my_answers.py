@@ -3,6 +3,7 @@ import numpy as np
 from keras.models import Sequential
 from keras.layers import Dense
 from keras.layers import LSTM
+from keras.layers import Activation
 import keras
 from math import ceil
 
@@ -67,5 +68,5 @@ def build_part2_RNN(window_size, num_chars):
   model.add(LSTM(200, input_shape=(window_size, num_chars)))
   # 1 result as the output
   model.add(Dense(num_chars))
-  model.add(Dense(units=num_chars, activation="softmax"))
+  model.add(Activation('softmax'))
   return model
