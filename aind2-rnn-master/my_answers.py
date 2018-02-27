@@ -19,12 +19,14 @@ def window_transform_series(series, window_size):
     for iter in range(0, iter_max+1):
       s_start = iter*wwindow_size
       s_end = s_start + window_size
-      if s_end < len(series):
+#      if s_end < len(series):
+#        X.append(series[s_start:s_end])
+#        y.append(series[s_end])
+#      else:
+#        X.append(series[s_start:-1])
+#        y.append(series[-1])
         X.append(series[s_start:s_end])
         y.append(series[s_end])
-      else:
-        X.append(series[s_start:-1])
-        y.append(series[-1])
 
     # reshape each
     X = np.asarray(X)
