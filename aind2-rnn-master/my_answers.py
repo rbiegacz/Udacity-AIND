@@ -16,11 +16,11 @@ def window_transform_series(series, window_size):
 
     wwindow_size = window_size - 1
     iter_max = ceil(len(series)/window_size)
-#    for iter in range(0, iter_max+1):
-#      s_start = iter*wwindow_size
-#      s_end = s_start + window_size
-#      X.append(series[s_start:s_end])
-#      y.append(series[s_end])
+    for iter in range(0, iter_max+1):
+      s_start = iter*wwindow_size
+      s_end = s_start + window_size
+      X.append(series[s_start:s_end])
+      y.append(series[s_end])
 #      if s_end < len(series):
 #        X.append(series[s_start:s_end])
 #        y.append(series[s_end])
@@ -28,8 +28,8 @@ def window_transform_series(series, window_size):
 #        X.append(series[s_start:-1])
 #        y.append(series[-1])
 
-    inputs = [ series[i : i + window_size] for i in range(0, len(series) - window_size), windows_size ]
-    outputs = [ series[i + window_size] for i in range(0, len(series) - window_size), windows_size ]
+#    inputs = [ series[i : i + window_size] for i in range(0, len(series) - window_size, window_size) ]
+#    outputs = [ series[i + window_size] for i in range(0, len(series) - window_size, window_size) ]
 
     # reshape each
     X = np.asarray(X)
