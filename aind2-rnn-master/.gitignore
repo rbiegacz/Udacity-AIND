@@ -16,3 +16,9 @@ __pycache__/
 .venv
 venv/
 ENV/
+
+*.html
+*.json
+*.zip
+
+datasets/
