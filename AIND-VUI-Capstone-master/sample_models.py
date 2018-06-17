@@ -158,7 +158,9 @@ def final_model(input_dim=161, filters=100, kernel_size=11,
     # Add batch normalization to normalize all the inputs
     rnn_data = bn_cnn = BatchNormalization(name='bn_1')(max_pooling)
     # Add Droppout layer - this will help with overfitting
-    # rnn_data = dropout = Dropout(0.1)(bn_cnn)
+    rnn_data = dropout = Dropout(dropout)(bn_cnn)
+
+    rnn_data = GRU(units, activation='relu', return_sequences=True, implementation=2, name='rnn')(rnn_data)
 
     # Add bidirectional recurrent layers
     for layer in range(recur_layers):
