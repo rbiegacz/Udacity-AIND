@@ -1,7 +1,7 @@
 from keras import backend as K
 from keras.models import Model
 from keras.layers import (BatchNormalization, Conv1D, Dense, Input, 
-    TimeDistributed, Activation, Bidirectional, SimpleRNN, GRU, LSTM, MaxPooling3D, MaxPooling2D)
+    TimeDistributed, Activation, Bidirectional, SimpleRNN, GRU, LSTM, MaxPooling1D, Dropout)
 
 def simple_rnn_model(input_dim, output_dim=29):
     """ Build a recurrent network for speech 
@@ -138,48 +138,45 @@ def bidirectional_rnn_model(input_dim, units, output_dim=29):
     print(model.summary())
     return model
 
-def final_model(input_dim):
+def final_model(input_dim=161, filters=100, kernel_size=11,
+                conv_stride=3, conv_border_mode='valid',
+                units=100, recur_layers=1, output_dim=29, dropout=0.1):
     """ Build a deep network for speech 
     """
+
     # Main acoustic input
     input_data = Input(name='the_input', shape=(None, input_dim))
-
     # TODO: Specify the layers in your network
-    # 1 Add convolution layers
-    recur_layers = 5
-    conv_stride = (1, 1)
-    kernel_size = (2, 2)
-
-    conv_1d = Conv1D(filters, kernel_size, strides=conv_stride, padding='valid', activation='relu', name='conv1d')(input_data)
+    # Add convolution layers
+    conv_1d = Conv1D(filters, kernel_size, strides=conv_stride, padding=conv_border_mode, activation='relu', name='conv1d')(input_data)
 
     # keras.layers.MaxPooling3D(pool_size=(2, 2, 2), strides=None, padding='valid', data_format=None)
     # addming Max Pooling layer to make the network smaller
-    # max_pooling = MaxPooling2D(pool_size=(2, 2), strides=(2,2))(conv_1d)
+    max_pooling = conv_1d
+    #max_pooling = MaxPooling1D(pool_size=5, strides=3)(conv_1d)
 
     # Add batch normalization to normalize all the inputs
-    bn_cnn = BatchNormalization(name='bn_1')(conv_1d)
+    rnn_data = bn_cnn = BatchNormalization(name='bn_1')(max_pooling)
     # Add Droppout layer - this will help with overfitting
-    rnn_data = dropout = Dropout(0.1)(bn_cnn)
+    # rnn_data = dropout = Dropout(0.1)(bn_cnn)
 
     # Add bidirectional recurrent layers
     for layer in range(recur_layers):
         # Create Names
-        bi_rnn_name = 'bi_rnn_%d' % layer
-        bn_rnn_name = 'bi_bn_' + bi_rnn_name
+        bi_rnn_name = 'bi_rnn_%d' % (layer + 2)
+        bn_rnn_name = 'bn_' + bi_rnn_name
         # create BiDirectional RNN layer
         rnn = Bidirectional(GRU(units, return_sequences=True, name=bi_rnn_name, implementation=2))(rnn_data)
         # Add batch normalization to bidirectional rnn layer
         bnn = BatchNormalization(name=bn_rnn_name)(rnn)
         # Add dropout to avoid overfitting
-        rnn_data = Dropout(0.1)(bnn)
+        rnn_data = Dropout(dropout)(bnn)
 
     # TODO: Add softmax activation layer
+    time_dense = TimeDistributed(Dense(output_dim))(rnn_data)
     y_pred = Activation('softmax', name='softmax')(time_dense)
-    # Specify the model
-    model = Model(inputs=input_data, outputs=y_pred)
     # TODO: Specify model.output_length
-    model.output_length = lambda x: cnn_output_length(
-        x, kernel_size, conv_border_mode, conv_stride)
-
+    model = Model(inputs=input_data, outputs=y_pred)
+    model.output_length = lambda x: cnn_output_length(x, kernel_size, conv_border_mode, conv_stride)
     print(model.summary())
     return model
