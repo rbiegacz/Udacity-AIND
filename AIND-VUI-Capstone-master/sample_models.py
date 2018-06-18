@@ -140,7 +140,7 @@ def bidirectional_rnn_model(input_dim, units, output_dim=29):
 
 def final_model(input_dim=161, filters=100, kernel_size=11,
                 conv_stride=3, conv_border_mode='valid',
-                units=100, recur_layers=2, output_dim=29, dropout=0.1):
+                units=100, recur_layers=2, output_dim=29, dropout=0.2):
     """ Build a deep network for speech 
     """
 
@@ -158,9 +158,11 @@ def final_model(input_dim=161, filters=100, kernel_size=11,
     # Add batch normalization to normalize all the inputs
     rnn_data = bn_cnn = BatchNormalization(name='bn_1')(max_pooling)
     # Add Droppout layer - this will help with overfitting
-    rnn_data = dropout = Dropout(dropout)(bn_cnn)
+    rnn_data_0 = dropout = Dropout(dropout)(bn_cnn)
 
-    rnn_data = GRU(units, activation='relu', return_sequences=True, implementation=2, name='rnn')(rnn_data)
+    rnn_data_1 = GRU(units, activation='relu', return_sequences=True, implementation=2, name='rnn')(rnn_data_0)
+
+    rnn_data = GRU(units, activation='relu', return_sequences=True, implementation=2, name='rnn')(rnn_data_1)
 
     # Add bidirectional recurrent layers
     for layer in range(recur_layers):
