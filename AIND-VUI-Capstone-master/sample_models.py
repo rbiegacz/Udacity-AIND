@@ -172,7 +172,7 @@ def final_model(input_dim=161, filters=100, kernel_size=11,
         # Add batch normalization to bidirectional rnn layer
         bnn = BatchNormalization(name=bn_rnn_name)(rnn)
         # Add dropout to avoid overfitting
-        rnn_data = Dropout(dropout)(bnn)
+        rnn_data = Dropout(0.2)(bnn)
 
     # TODO: Add softmax activation layer
     time_dense = TimeDistributed(Dense(output_dim))(rnn_data)
